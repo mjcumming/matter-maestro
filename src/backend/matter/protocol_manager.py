@@ -87,5 +87,29 @@ class MatterProtocolManager:
             logger.error(f"Error controlling device {node_id}: {e}")
             return {'success': False, 'error': str(e)}
 
+    async def get_device_fabrics(self, node_id: str) -> list:
+        """Get all fabrics a device is connected to."""
+        if not self._initialized:
+            await self.initialize()
+
+        try:
+            # Get node information which includes fabric details
+            node = self._nodes.get(node_id)
+            if not node:
+                return []
+
+            # Query fabric information through Matter client
+            fabrics = await self.client.get_node_fabrics(node_id)
+
+            # Format fabric information
+            return [{
+                'fabric_id': fabric.get('fabric_id'),
+                'name': fabric.get('name', 'Unknown Fabric'),
+                'is_primary': fabric.get('is_primary', False)
+            } for fabric in fabrics]
+        except Exception as e:
+            logger.error(f"Error getting fabrics for device {node_id}: {e}")
+            return []
+
 # Create a singleton instance
 protocol_manager = MatterProtocolManager()

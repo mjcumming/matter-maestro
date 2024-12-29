@@ -76,6 +76,7 @@
                                 <th>Name</th>
                                 <th>Type</th>
                                 <th>Status</th>
+                                <th>Fabrics</th>
                                 <th>Last Seen</th>
                                 <th>Actions</th>
                             </tr>
@@ -198,14 +199,21 @@
                                     ${device.online ? 'Online' : 'Offline'}
                                 </span>
                             </td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="showFabrics('${device.id}')">
+                                    Show Fabrics
+                                </button>
+                            </td>
                             <td>${new Date(device.last_seen).toLocaleString()}</td>
                             <td>
-                                <button class="btn btn-sm btn-primary" onclick="configureDevice('${device.id}')">
-                                    Configure
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="removeDevice('${device.id}')">
-                                    Remove
-                                </button>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary" onclick="configureDevice('${device.id}')">
+                                        Configure
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteDevice('${device.id}')">
+                                        Delete
+                                    </button>
+                                </div>
                             </td>
                         `;
                         deviceList.appendChild(row);
@@ -235,19 +243,76 @@
                 });
         };
 
-        window.removeDevice = function(deviceId) {
-            if (confirm('Are you sure you want to remove this device?')) {
+        window.deleteDevice = function(deviceId) {
+            if (confirm('Are you sure you want to delete this device? This cannot be undone.')) {
                 fetch(`/api/devices/${deviceId}`, {
                     method: 'DELETE'
                 })
                 .then(response => {
                     if (response.ok) {
-                        location.reload();
+                        loadDevices(); // Refresh the device list
                     } else {
-                        alert('Failed to remove device');
+                        throw new Error('Failed to delete device');
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to delete device');
                 });
             }
+        };
+
+        window.showFabrics = function(deviceId) {
+            fetch(`/api/devices/${deviceId}/fabrics`)
+                .then(response => response.json())
+                .then(data => {
+                    const fabricsList = data.fabrics.map(fabric => `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${fabric.name}</strong>
+                                    <br>
+                                    <small class="text-muted">Fabric ID: ${fabric.fabric_id}</small>
+                                </div>
+                                ${fabric.is_primary ? '<span class="badge bg-primary">Primary</span>' : ''}
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Create and show a modal with the fabrics information
+                    const modalHtml = `
+                        <div class="modal fade" id="fabricsModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Connected Fabrics</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="list-group">
+                                            ${fabricsList || '<div class="alert alert-info">No fabrics found</div>'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Remove existing modal if any
+                    const existingModal = document.getElementById('fabricsModal');
+                    if (existingModal) {
+                        existingModal.remove();
+                    }
+
+                    // Add the modal to the document
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    const modal = new bootstrap.Modal(document.getElementById('fabricsModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to fetch fabric information');
+                });
         };
     </script>
 </body>

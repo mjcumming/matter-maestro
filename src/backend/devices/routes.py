@@ -228,3 +228,70 @@ async def control_device(node_id):
     except Exception as e:
         logger.error(f"Error controlling device: {e}")
         return jsonify({'error': 'Failed to control device'}), 500
+
+@devices_blueprint.route('/<string:device_id>', methods=['DELETE'])
+def delete_device(device_id):
+    """
+    Delete a device from the system
+    ---
+    parameters:
+      - in: path
+        name: device_id
+        type: string
+        required: true
+    responses:
+      200:
+        description: Device deleted successfully
+      404:
+        description: Device not found
+    """
+    try:
+        devices_table.remove(doc_ids=[device_id])
+        return jsonify({'message': 'Device deleted successfully'})
+    except Exception as e:
+        logger.error(f"Error deleting device: {e}")
+        return jsonify({'error': 'Device not found'}), 404
+
+@devices_blueprint.route('/<string:device_id>/fabrics', methods=['GET'])
+@async_route
+async def get_device_fabrics(device_id):
+    """
+    Get all fabrics a device is connected to
+    ---
+    parameters:
+      - in: path
+        name: device_id
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of fabrics the device is connected to
+        schema:
+          type: object
+          properties:
+            fabrics:
+              type: array
+              items:
+                type: object
+                properties:
+                  fabric_id:
+                    type: string
+                  name:
+                    type: string
+                  is_primary:
+                    type: boolean
+      404:
+        description: Device not found
+    """
+    try:
+        await protocol_manager.initialize()
+        device = devices_table.get(doc_id=device_id)
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Get fabric information from the Matter protocol manager
+        fabrics = await protocol_manager.get_device_fabrics(device_id)
+        return jsonify({'fabrics': fabrics})
+    except Exception as e:
+        logger.error(f"Error getting device fabrics: {e}")
+        return jsonify({'error': 'Failed to get device fabrics'}), 500
