@@ -1,0 +1,236 @@
+Here’s a comprehensive list of all the functionalities discussed for the Matter Maestro project, broken down by category, including detailed descriptions and examples.
+
+1. Credentials Management
+
+a. Retrieve Credentials
+	•	Description: Retrieve Matter fabric credentials (e.g., fabric ID, vendor ID) stored locally. If credentials are not present, initialize a new set.
+	•	Endpoints:
+	•	GET /credentials
+	•	Returns the current fabric and vendor ID.
+	•	Data Structure:
+
+{
+    "fabric_id": "1234567890ABCDEF",
+    "vendor_id": "9876"
+}
+
+
+	•	Error Handling:
+	•	If credentials are missing or corrupted, log a critical error and attempt re-initialization.
+
+2. Device Management
+
+a. Add Device
+	•	Description: Provision a new device to the Matter fabric, with options to add the controller as the primary or secondary controller.
+	•	Endpoints:
+	•	POST /devices
+	•	Input:
+
+{
+    "pairing_code": "123-45-678",
+    "name": "Living Room Light",
+    "location": "Living Room"
+}
+
+
+	•	Response:
+
+{
+    "message": "Device provisioned successfully",
+    "device": {
+        "device_id": "device-12345",
+        "name": "Living Room Light",
+        "location": "Living Room"
+    }
+}
+
+
+
+b. Delete Device
+	•	Description: Remove a device from the Matter fabric.
+	•	Endpoints:
+	•	DELETE /devices/{device_id}
+	•	Deletes the specified device by its unique ID.
+
+c. List Devices
+	•	Description: Retrieve a list of all devices currently provisioned on the Matter fabric.
+	•	Endpoints:
+	•	GET /devices
+	•	Response:
+
+[
+    {
+        "device_id": "device-12345",
+        "name": "Living Room Light",
+        "location": "Living Room",
+        "type": "light",
+        "status": "online"
+    },
+    {
+        "device_id": "device-67890",
+        "name": "Kitchen Outlet",
+        "location": "Kitchen",
+        "type": "outlet",
+        "status": "offline"
+    }
+]
+
+
+
+d. Device Status
+	•	Description: Query the current status of a specific device (e.g., online/offline, last heard from).
+	•	Endpoints:
+	•	GET /devices/{device_id}/status
+	•	Response:
+
+{
+    "device_id": "device-12345",
+    "status": "online",
+    "last_heard": "2024-12-29T12:34:56Z"
+}
+
+3. Scenes Management
+
+a. Add Scene
+	•	Description: Create a new scene that defines a specific configuration of devices.
+	•	Endpoints:
+	•	POST /scenes
+	•	Input:
+
+{
+    "scene_id": "morning_routine",
+    "name": "Morning Routine",
+    "devices": [
+        {"device_id": "device-12345", "state": {"on": true, "brightness": 50}},
+        {"device_id": "device-67890", "state": {"on": false}}
+    ]
+}
+
+
+	•	Response:
+
+{
+    "message": "Scene added successfully",
+    "scene_id": "morning_routine"
+}
+
+
+
+b. Edit Scene
+	•	Description: Update an existing scene’s configuration.
+	•	Endpoints:
+	•	PUT /scenes/{scene_id}
+	•	Updates the devices and states for the specified scene.
+
+c. Delete Scene
+	•	Description: Remove a scene from the database.
+	•	Endpoints:
+	•	DELETE /scenes/{scene_id}
+
+d. List Scenes
+	•	Description: Retrieve all available scenes.
+	•	Endpoints:
+	•	GET /scenes
+
+4. Groups Management
+
+a. Add Group
+	•	Description: Create a new group of devices for collective control.
+	•	Endpoints:
+	•	POST /groups
+	•	Input:
+
+{
+    "group_id": "living_room",
+    "name": "Living Room Group",
+    "devices": ["device-12345", "device-67890"]
+}
+
+
+
+b. Edit Group
+	•	Description: Update the devices in a group.
+	•	Endpoints:
+	•	PUT /groups/{group_id}
+
+c. Delete Group
+	•	Description: Remove a group.
+	•	Endpoints:
+	•	DELETE /groups/{group_id}
+
+d. List Groups
+	•	Description: Retrieve all available groups.
+	•	Endpoints:
+	•	GET /groups
+
+5. Virtual Circuits
+
+a. Add Virtual Circuit
+	•	Description: Link a primary device with one or more secondary devices for synchronized actions (e.g., virtual 3-way switches).
+	•	Endpoints:
+	•	POST /virtual-circuits
+	•	Input:
+
+{
+    "circuit_id": "living_room_circuit",
+    "name": "Living Room Circuit",
+    "primary_device": "device-12345",
+    "linked_devices": [
+        {"node_id": "device-67890", "type": "on/off"}
+    ]
+}
+
+
+
+b. Edit Virtual Circuit
+	•	Description: Modify an existing virtual circuit.
+	•	Endpoints:
+	•	PUT /virtual-circuits/{circuit_id}
+
+c. Delete Virtual Circuit
+	•	Description: Remove a virtual circuit.
+	•	Endpoints:
+	•	DELETE /virtual-circuits/{circuit_id}
+
+d. Get All Virtual Circuits
+	•	Description: Retrieve a list of all virtual circuits.
+	•	Endpoints:
+	•	GET /virtual-circuits
+
+6. Logging and Diagnostics
+
+a. Logs
+	•	Description: Centralized logging for troubleshooting and monitoring.
+	•	Details:
+	•	Log device pairing, state changes, scene activations, and errors.
+	•	Support both console and file logging.
+
+b. Diagnostics
+	•	Description: Provide diagnostic tools to check device health and connectivity.
+	•	Endpoints:
+	•	GET /devices/{device_id}/diagnostics
+	•	Response:
+
+{
+    "device_id": "device-12345",
+    "diagnostics": {
+        "uptime": "123456 seconds",
+        "errors": []
+    }
+}
+
+7. Advanced Features
+
+a. QR Code Generation
+	•	Description: Generate QR codes for pairing devices.
+	•	Endpoints:
+	•	GET /devices/{device_id}/qrcode
+	•	Response:
+	•	A QR code image or encoded data.
+
+b. Cloud Backup (Future)
+	•	Description: Backup device configurations and scenes to the cloud for redundancy.
+
+Conclusion
+
+This detailed functionality list covers all the essential and advanced features discussed for Matter Maestro. Let me know if any further clarification or functionality expansion is needed!

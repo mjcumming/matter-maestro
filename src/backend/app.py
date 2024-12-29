@@ -4,6 +4,7 @@ from .devices.routes import devices_blueprint
 from .scenes.routes import scenes_blueprint
 from .groups.routes import groups_blueprint
 from .virtual_circuits.routes import virtual_circuits_blueprint
+from .credentials.routes import credentials_blueprint
 from .logger import get_logger
 from .database.database import initialize_db
 
@@ -25,6 +26,7 @@ app.register_blueprint(devices_blueprint, url_prefix="/api/devices")
 app.register_blueprint(scenes_blueprint, url_prefix="/api/scenes")
 app.register_blueprint(groups_blueprint, url_prefix="/api/groups")
 app.register_blueprint(virtual_circuits_blueprint, url_prefix="/api/virtual-circuits")
+app.register_blueprint(credentials_blueprint, url_prefix="/api/credentials")
 
 @app.route('/')
 def index():

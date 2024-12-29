@@ -35,9 +35,24 @@ def get_devices():
     responses:
       200:
         description: List of all devices
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              type:
+                type: string
+              status:
+                type: string
+              last_seen:
+                type: string
+                format: date-time
     """
     devices = devices_table.all()
-    # Enhance device data with online status
     for device in devices:
         device['online'] = True  # TODO: Implement real online status check
         device['last_seen'] = datetime.now().isoformat()
@@ -50,15 +65,16 @@ async def pair_device():
     Pair a new Matter device
     ---
     parameters:
-      - name: setup_code
-        in: body
+      - in: body
+        name: body
         required: true
         schema:
           type: object
           properties:
             setup_code:
               type: string
-              pattern: "^\\d{8}$"
+              pattern: '[0-9]{8}'
+              example: '12345678'
     responses:
       200:
         description: Device paired successfully
@@ -72,11 +88,9 @@ async def pair_device():
         if not setup_code or not setup_code.isdigit() or len(setup_code) != 8:
             return jsonify({'error': 'Invalid setup code'}), 400
 
-        # Initialize Matter protocol manager if needed
         await protocol_manager.initialize()
 
         # TODO: Implement actual Matter pairing logic
-        # For now, return a mock success response
         return jsonify({
             'message': 'Device paired successfully',
             'device_id': 'mock_id'
@@ -91,8 +105,8 @@ def add_device():
     Add a new device
     ---
     parameters:
-      - name: device
-        in: body
+      - in: body
+        name: body
         required: true
         schema:
           type: object
@@ -120,29 +134,6 @@ def add_device():
         logger.error(f"Error adding device: {e}")
         return jsonify({'error': 'Failed to add device'}), 500
 
-@devices_blueprint.route('/<int:device_id>', methods=['DELETE'])
-def remove_device(device_id):
-    """
-    Remove a device
-    ---
-    parameters:
-      - name: device_id
-        in: path
-        type: integer
-        required: true
-    responses:
-      200:
-        description: Device removed successfully
-      404:
-        description: Device not found
-    """
-    try:
-        devices_table.remove(doc_ids=[device_id])
-        return jsonify({'message': 'Device removed successfully'})
-    except Exception as e:
-        logger.error(f"Error removing device: {e}")
-        return jsonify({'error': 'Device not found'}), 404
-
 @devices_blueprint.route('/discover', methods=['POST'])
 @async_route
 async def discover_devices():
@@ -152,6 +143,15 @@ async def discover_devices():
     responses:
       200:
         description: List of discovered devices
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            devices:
+              type: array
+              items:
+                type: object
       500:
         description: Error during device discovery
     """
@@ -170,8 +170,8 @@ async def get_device_info(node_id):
     Get detailed information about a device
     ---
     parameters:
-      - name: node_id
-        in: path
+      - in: path
+        name: node_id
         type: string
         required: true
     responses:
@@ -196,12 +196,12 @@ async def control_device(node_id):
     Control a Matter device
     ---
     parameters:
-      - name: node_id
-        in: path
+      - in: path
+        name: node_id
         type: string
         required: true
-      - name: command
-        in: body
+      - in: body
+        name: body
         required: true
         schema:
           type: object
@@ -215,8 +215,6 @@ async def control_device(node_id):
         description: Command sent successfully
       404:
         description: Device not found
-      500:
-        description: Error controlling device
     """
     try:
         data = request.get_json()
@@ -224,7 +222,7 @@ async def control_device(node_id):
         params = data.get('params', {})
 
         result = await protocol_manager.control_device(node_id, command, params)
-        return jsonify({'result': result})
+        return jsonify(result)
     except ValueError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
