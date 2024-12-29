@@ -1,0 +1,147 @@
+Instructions for Replit Assistant
+
+Project Goals
+	1.	Local-First Matter Fabric Controller: Provide a vendor-agnostic Matter fabric controller that operates entirely within the local network, independent of cloud services.
+	2.	Seamless Device Re-Enrollments: Ensure that the controller can remain in place when residents move, enabling new users to re-enroll devices easily.
+	3.	Scene and Group Management: Enable users to create, edit, and manage scenes and groups for devices.
+	4.	Virtual Circuits: Allow logical linking of devices (e.g., virtual 3-way switches) to synchronize states and actions.
+	5.	User-Focused Simplicity: Offer a clean and intuitive interface for device and scene management.
+
+1. Create Project Structure
+	1.	Create the following directories and files:
+
+matter-maestro/
+├── src/
+│   ├── backend/
+│   │   ├── app.py
+│   │   ├── logger.py
+│   │   ├── database/
+│   │   │   ├── __init__.py
+│   │   │   ├── database.py
+│   │   ├── credentials/
+│   │   │   ├── __init__.py
+│   │   │   ├── credential_manager.py
+│   │   ├── devices/
+│   │   │   ├── __init__.py
+│   │   │   ├── routes.py
+│   │   ├── scenes/
+│   │   │   ├── __init__.py
+│   │   │   ├── routes.py
+│   │   ├── groups/
+│   │   │   ├── __init__.py
+│   │   │   ├── routes.py
+│   │   ├── virtual_circuits/
+│   │   │   ├── __init__.py
+│   │   │   ├── routes.py
+│   │   │   ├── virtual_manager.py
+├── requirements.txt
+├── README.md
+├── white_paper.md
+
+
+	2.	Use Replit’s file explorer to create these files and directories.
+
+2. Configure Dependencies
+	1.	In the requirements.txt file, add the following dependencies:
+
+Flask
+flasgger
+tinydb
+appdirs
+python-matter-server
+
+
+	2.	Save the file, and Replit will automatically install the dependencies.
+
+3. Write Core Files
+
+src/backend/app.py
+
+Set up the Flask application and register blueprints:
+
+from flask import Flask
+from flasgger import Swagger
+from backend.devices.routes import devices_blueprint
+from backend.scenes.routes import scenes_blueprint
+from backend.groups.routes import groups_blueprint
+from backend.virtual_circuits.routes import virtual_circuits_blueprint
+
+app = Flask(__name__)
+swagger = Swagger(app)
+
+# Register blueprints
+app.register_blueprint(devices_blueprint, url_prefix="/devices")
+app.register_blueprint(scenes_blueprint, url_prefix="/scenes")
+app.register_blueprint(groups_blueprint, url_prefix="/groups")
+app.register_blueprint(virtual_circuits_blueprint, url_prefix="/virtual-circuits")
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+src/backend/logger.py
+
+Set up a logging utility:
+
+import logging
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    if not logger.hasHandlers():
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    return logger
+
+4. Add API Routes
+
+Create routes.py files for each module (devices, scenes, groups, virtual_circuits) and define the necessary endpoints. For example:
+
+src/backend/devices/routes.py
+
+from flask import Blueprint, jsonify, request
+
+devices_blueprint = Blueprint("devices", __name__)
+
+@devices_blueprint.route("", methods=["POST"])
+def add_device():
+    """Endpoint to add a new device."""
+    data = request.json
+    return jsonify({"message": "Device added", "data": data}), 201
+
+Repeat similar steps for scenes, groups, and virtual_circuits.
+
+5. Test the Application
+	1.	Click the Run button in Replit.
+	2.	Open the provided URL to test the API endpoints (e.g., /devices, /scenes).
+	3.	Use tools like Postman or Replit’s built-in HTTP client to send requests to the endpoints.
+
+6. Enhance with OpenAPI
+	1.	Use the flasgger library to document endpoints in the routes.py files.
+	2.	Example with Swagger:
+
+@devices_blueprint.route("", methods=["POST"])
+def add_device():
+    """
+    Add a new device
+    ---
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            device_id:
+              type: string
+            name:
+              type: string
+    responses:
+      201:
+        description: Device added
+    """
+    data = request.json
+    return jsonify({"message": "Device added", "data": data}), 201
+
+Provide these instructions to the Replit Assistant to help set up and manage the Matter Maestro project effectively. Let me know if you need further refinements!
