@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Device Linking - Matter Maestro</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/leader-line-new/leader-line.min.js"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active">Virtual Circuits</li>
+            </ol>
+        </nav>
+
+        <h2>Virtual Device Linking</h2>
+        <p class="lead">Create logical connections between your Matter devices</p>
+
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        Available Devices
+                    </div>
+                    <div class="card-body">
+                        <div id="available-devices" class="list-group">
+                            <!-- Devices will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Virtual Circuit Designer</span>
+                        <button id="save-circuit" class="btn btn-primary btn-sm">Save Circuit</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="circuit-canvas" class="border rounded p-3" style="min-height: 400px; position: relative;">
+                            <!-- Devices will be placed here for linking -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        Existing Virtual Circuits
+                    </div>
+                    <div class="card-body">
+                        <div id="existing-circuits" class="list-group">
+                            <!-- Existing circuits will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Circuit Creation Modal -->
+    <div class="modal fade" id="circuitModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Virtual Circuit</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="circuit-form">
+                        <div class="mb-3">
+                            <label for="circuit-name" class="form-label">Circuit Name</label>
+                            <input type="text" class="form-control" id="circuit-name" required>
+                        </div>
+                        <div id="selected-devices-list" class="mb-3">
+                            <!-- Selected devices will be listed here -->
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="create-circuit">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let activeConnections = [];
+            let selectedDevices = new Set();
+            
+            // Fetch available devices
+            fetch('/api/devices')
+                .then(response => response.json())
+                .then(devices => {
+                    const devicesList = document.getElementById('available-devices');
+                    devices.forEach(device => {
+                        const deviceElement = createDeviceElement(device);
+                        devicesList.appendChild(deviceElement);
+                    });
+                });
+
+            // Fetch existing circuits
+            fetch('/api/virtual-circuits')
+                .then(response => response.json())
+                .then(circuits => {
+                    const circuitsList = document.getElementById('existing-circuits');
+                    circuits.forEach(circuit => {
+                        const circuitElement = createCircuitElement(circuit);
+                        circuitsList.appendChild(circuitElement);
+                    });
+                });
+
+            function createDeviceElement(device) {
+                const div = document.createElement('div');
+                div.className = 'list-group-item list-group-item-action';
+                div.setAttribute('draggable', true);
+                div.textContent = device.name;
+                div.dataset.deviceId = device.id;
+
+                div.addEventListener('dragstart', handleDragStart);
+                return div;
+            }
+
+            function createCircuitElement(circuit) {
+                const div = document.createElement('div');
+                div.className = 'list-group-item';
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-1">${circuit.name}</h5>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteCircuit('${circuit.id}')">
+                            Delete
+                        </button>
+                    </div>
+                    <p class="mb-1">Connected Devices: ${circuit.devices.length}</p>
+                `;
+                return div;
+            }
+
+            const canvas = document.getElementById('circuit-canvas');
+            canvas.addEventListener('dragover', handleDragOver);
+            canvas.addEventListener('drop', handleDrop);
+
+            function handleDragStart(e) {
+                e.dataTransfer.setData('text/plain', e.target.dataset.deviceId);
+            }
+
+            function handleDragOver(e) {
+                e.preventDefault();
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                const deviceId = e.dataTransfer.getData('text/plain');
+                const deviceName = document.querySelector(`[data-device-id="${deviceId}"]`).textContent;
+
+                const deviceNode = document.createElement('div');
+                deviceNode.className = 'device-node position-absolute';
+                deviceNode.style.left = `${e.offsetX}px`;
+                deviceNode.style.top = `${e.offsetY}px`;
+                deviceNode.dataset.deviceId = deviceId;
+                
+                deviceNode.innerHTML = `
+                    <div class="card" style="width: 150px;">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-0">${deviceName}</h6>
+                        </div>
+                    </div>
+                `;
+
+                canvas.appendChild(deviceNode);
+                makeDeviceNodeDraggable(deviceNode);
+                selectedDevices.add(deviceId);
+            }
+
+            function makeDeviceNodeDraggable(node) {
+                let isDragging = false;
+                let currentX;
+                let currentY;
+                let initialX;
+                let initialY;
+
+                node.addEventListener('mousedown', dragStart);
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', dragEnd);
+
+                function dragStart(e) {
+                    initialX = e.clientX - node.offsetLeft;
+                    initialY = e.clientY - node.offsetTop;
+                    isDragging = true;
+                }
+
+                function drag(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+                        node.style.left = `${currentX}px`;
+                        node.style.top = `${currentY}px`;
+                        updateConnections();
+                    }
+                }
+
+                function dragEnd() {
+                    isDragging = false;
+                }
+            }
+
+            document.getElementById('save-circuit').addEventListener('click', () => {
+                const modal = new bootstrap.Modal(document.getElementById('circuitModal'));
+                updateSelectedDevicesList();
+                modal.show();
+            });
+
+            document.getElementById('create-circuit').addEventListener('click', () => {
+                const name = document.getElementById('circuit-name').value;
+                const devices = Array.from(selectedDevices).map(id => ({
+                    device_id: id,
+                    role: 'member'
+                }));
+
+                fetch('/api/virtual-circuits', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, devices }),
+                })
+                .then(response => response.json())
+                .then(circuit => {
+                    const circuitsList = document.getElementById('existing-circuits');
+                    circuitsList.appendChild(createCircuitElement(circuit));
+                    bootstrap.Modal.getInstance(document.getElementById('circuitModal')).hide();
+                    clearCanvas();
+                });
+            });
+
+            function updateSelectedDevicesList() {
+                const list = document.getElementById('selected-devices-list');
+                list.innerHTML = '';
+                selectedDevices.forEach(deviceId => {
+                    const device = document.querySelector(`[data-device-id="${deviceId}"]`);
+                    const div = document.createElement('div');
+                    div.className = 'alert alert-info mb-2';
+                    div.textContent = device.textContent;
+                    list.appendChild(div);
+                });
+            }
+
+            function clearCanvas() {
+                document.getElementById('circuit-canvas').innerHTML = '';
+                selectedDevices.clear();
+                activeConnections.forEach(connection => connection.remove());
+                activeConnections = [];
+            }
+
+            window.deleteCircuit = function(circuitId) {
+                fetch(`/api/virtual-circuits/${circuitId}`, {
+                    method: 'DELETE',
+                })
+                .then(() => {
+                    document.querySelector(`[data-circuit-id="${circuitId}"]`).remove();
+                });
+            };
+        });
+    </script>
+</body>
+</html>
