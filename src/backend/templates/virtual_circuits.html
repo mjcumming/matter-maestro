@@ -101,6 +101,9 @@
                             <select id="primary-device" class="form-select" required>
                                 <!-- Primary device options will be populated -->
                             </select>
+                            <div id="primary-device-fabrics" class="mt-2 small">
+                                <!-- Fabric information will be shown here -->
+                            </div>
                         </div>
                         <div id="selected-devices-list" class="mb-3">
                             <label class="form-label">Linked Devices</label>
@@ -447,6 +450,41 @@
                     });
                 }
             };
+
+
+            async function showDeviceFabrics(deviceId, containerId) {
+                try {
+                    const response = await fetch(`/api/devices/${deviceId}/fabrics`);
+                    const data = await response.json();
+                    const container = document.getElementById(containerId);
+
+                    if (data.fabrics && data.fabrics.length > 0) {
+                        const fabricsList = data.fabrics.map(fabric => `
+                            <div class="badge bg-secondary me-1 mb-1">
+                                ${fabric.name} ${fabric.is_primary ? '(Primary)' : ''}
+                            </div>
+                        `).join('');
+                        container.innerHTML = `
+                            <div class="mt-2">
+                                <small class="text-muted">Connected Fabrics:</small><br>
+                                ${fabricsList}
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = '<small class="text-muted">No fabric information available</small>';
+                    }
+                } catch (error) {
+                    console.error('Error fetching fabric information:', error);
+                }
+            }
+
+            // Update the primary device selection handler
+            document.getElementById('primary-device').addEventListener('change', function(e) {
+                const deviceId = e.target.value;
+                if (deviceId) {
+                    showDeviceFabrics(deviceId, 'primary-device-fabrics');
+                }
+            });
         });
     </script>
 </body>
