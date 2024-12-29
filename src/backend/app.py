@@ -5,6 +5,7 @@ from .scenes.routes import scenes_blueprint
 from .groups.routes import groups_blueprint
 from .virtual_circuits.routes import virtual_circuits_blueprint
 from .credentials.routes import credentials_blueprint
+from .backup.routes import backup_blueprint  # Add backup blueprint import
 from .logger import get_logger
 from .database.database import initialize_db
 
@@ -27,6 +28,7 @@ app.register_blueprint(scenes_blueprint, url_prefix="/api/scenes")
 app.register_blueprint(groups_blueprint, url_prefix="/api/groups")
 app.register_blueprint(virtual_circuits_blueprint, url_prefix="/api/virtual-circuits")
 app.register_blueprint(credentials_blueprint, url_prefix="/api/credentials")
+app.register_blueprint(backup_blueprint, url_prefix="/api/backup")  # Register backup blueprint
 
 @app.route('/')
 def index():

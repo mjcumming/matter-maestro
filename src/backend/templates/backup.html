@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup Management - Matter Maestro</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active">Backup Management</li>
+            </ol>
+        </nav>
+
+        <h2>Backup Management</h2>
+        <p class="lead">Configure and manage your Matter Maestro backups</p>
+
+        <!-- Cloud Service Configuration -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Cloud Service Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="service-config-form">
+                    <div class="mb-3">
+                        <label class="form-label">Select Cloud Service</label>
+                        <select id="cloud-service" class="form-select">
+                            <option value="">Select a service</option>
+                            <option value="google_drive">Google Drive</option>
+                            <option value="onedrive">OneDrive</option>
+                        </select>
+                    </div>
+                    <div id="service-auth" class="d-none">
+                        <button type="button" class="btn btn-primary" id="authenticate-service">
+                            Connect to Service
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Backup Configuration -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Backup Settings</h5>
+            </div>
+            <div class="card-body">
+                <form id="backup-config-form">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto-backup">
+                            <label class="form-check-label" for="auto-backup">Enable Automatic Backup</label>
+                        </div>
+                    </div>
+                    <div id="backup-interval" class="mb-3 d-none">
+                        <label class="form-label">Backup Frequency</label>
+                        <select class="form-select" id="backup-frequency">
+                            <option value="realtime">Real-time</option>
+                            <option value="hourly">Hourly</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manual Backup -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Manual Backup</h5>
+            </div>
+            <div class="card-body">
+                <p>Last backup: <span id="last-backup">Never</span></p>
+                <button id="trigger-backup" class="btn btn-success">
+                    Backup Now
+                </button>
+            </div>
+        </div>
+
+        <!-- Backup History -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Backup History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backup-history">
+                            <!-- Backup history will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Authentication Modal -->
+    <div class="modal fade" id="authModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Connect to Cloud Service</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="auth-content">
+                        <!-- Authentication content will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load current configuration
+            fetch('/api/backup/config')
+                .then(response => response.json())
+                .then(config => {
+                    document.getElementById('cloud-service').value = config.service || '';
+                    document.getElementById('auto-backup').checked = config.auto_backup;
+                    if (config.auto_backup) {
+                        document.getElementById('backup-interval').classList.remove('d-none');
+                        document.getElementById('backup-frequency').value = config.interval;
+                    }
+                    if (config.last_backup) {
+                        document.getElementById('last-backup').textContent = 
+                            new Date(config.last_backup).toLocaleString();
+                    }
+                });
+
+            // Cloud service selection
+            document.getElementById('cloud-service').addEventListener('change', function(e) {
+                const authSection = document.getElementById('service-auth');
+                if (e.target.value) {
+                    authSection.classList.remove('d-none');
+                } else {
+                    authSection.classList.add('d-none');
+                }
+            });
+
+            // Auto backup toggle
+            document.getElementById('auto-backup').addEventListener('change', function(e) {
+                const intervalSection = document.getElementById('backup-interval');
+                if (e.target.checked) {
+                    intervalSection.classList.remove('d-none');
+                } else {
+                    intervalSection.classList.add('d-none');
+                }
+            });
+
+            // Save backup configuration
+            document.getElementById('backup-config-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const config = {
+                    auto_backup: document.getElementById('auto-backup').checked,
+                    interval: document.getElementById('backup-frequency').value,
+                    backup_enabled: true
+                };
+
+                fetch('/api/backup/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(config)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    alert('Backup settings saved successfully');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to save backup settings');
+                });
+            });
+
+            // Manual backup trigger
+            document.getElementById('trigger-backup').addEventListener('click', function() {
+                if (!confirm('Start a manual backup now?')) return;
+
+                this.disabled = true;
+                this.textContent = 'Backing up...';
+
+                fetch('/api/backup/backup', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Backup completed successfully');
+                        document.getElementById('last-backup').textContent = 
+                            new Date(result.timestamp).toLocaleString();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Backup failed: ' + error.message);
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.textContent = 'Backup Now';
+                });
+            });
+
+            // Service authentication
+            document.getElementById('authenticate-service').addEventListener('click', function() {
+                const service = document.getElementById('cloud-service').value;
+                if (!service) {
+                    alert('Please select a cloud service first');
+                    return;
+                }
+
+                // Show authentication modal with appropriate content
+                const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+                const authContent = document.getElementById('auth-content');
+
+                if (service === 'google_drive') {
+                    authContent.innerHTML = `
+                        <p>Click the button below to connect to Google Drive:</p>
+                        <button class="btn btn-primary" onclick="authenticateGoogleDrive()">
+                            Connect to Google Drive
+                        </button>
+                    `;
+                } else if (service === 'onedrive') {
+                    authContent.innerHTML = `
+                        <p>Click the button below to connect to OneDrive:</p>
+                        <button class="btn btn-primary" onclick="authenticateOneDrive()">
+                            Connect to OneDrive
+                        </button>
+                    `;
+                }
+
+                authModal.show();
+            });
+        });
+
+        // Authentication handlers
+        function authenticateGoogleDrive() {
+            // TODO: Implement Google Drive OAuth flow
+            console.log('Authenticating with Google Drive...');
+        }
+
+        function authenticateOneDrive() {
+            // TODO: Implement OneDrive OAuth flow
+            console.log('Authenticating with OneDrive...');
+        }
+
+        function restoreBackup(backupId) {
+            if (!confirm('Are you sure you want to restore from this backup? Current data will be overwritten.')) {
+                return;
+            }
+
+            fetch(`/api/backup/restore/${backupId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Backup restored successfully');
+                    location.reload();
+                } else {
+                    throw new Error(result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to restore backup: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>
