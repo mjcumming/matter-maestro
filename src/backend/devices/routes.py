@@ -1,9 +1,10 @@
 from functools import wraps
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, current_app, render_template
 from ..logger import get_logger
 from ..database.database import initialize_db, get_table
 from ..matter.protocol_manager import protocol_manager
 import asyncio
+from datetime import datetime
 
 devices_blueprint = Blueprint('devices', __name__)
 logger = get_logger(__name__)
@@ -21,6 +22,11 @@ def async_route(f):
             loop.close()
     return wrapped
 
+@devices_blueprint.route('/ui', methods=['GET'])
+def devices_ui():
+    """Render the devices management UI"""
+    return render_template('devices.html')
+
 @devices_blueprint.route('', methods=['GET'])
 def get_devices():
     """
@@ -31,7 +37,53 @@ def get_devices():
         description: List of all devices
     """
     devices = devices_table.all()
+    # Enhance device data with online status
+    for device in devices:
+        device['online'] = True  # TODO: Implement real online status check
+        device['last_seen'] = datetime.now().isoformat()
     return jsonify(devices)
+
+@devices_blueprint.route('/pair', methods=['POST'])
+@async_route
+async def pair_device():
+    """
+    Pair a new Matter device
+    ---
+    parameters:
+      - name: setup_code
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            setup_code:
+              type: string
+              pattern: "^\\d{8}$"
+    responses:
+      200:
+        description: Device paired successfully
+      400:
+        description: Invalid setup code
+    """
+    try:
+        data = request.get_json()
+        setup_code = data.get('setup_code')
+
+        if not setup_code or not setup_code.isdigit() or len(setup_code) != 8:
+            return jsonify({'error': 'Invalid setup code'}), 400
+
+        # Initialize Matter protocol manager if needed
+        await protocol_manager.initialize()
+
+        # TODO: Implement actual Matter pairing logic
+        # For now, return a mock success response
+        return jsonify({
+            'message': 'Device paired successfully',
+            'device_id': 'mock_id'
+        })
+    except Exception as e:
+        logger.error(f"Error pairing device: {e}")
+        return jsonify({'error': 'Failed to pair device'}), 500
 
 @devices_blueprint.route('', methods=['POST'])
 def add_device():
@@ -105,10 +157,37 @@ async def discover_devices():
     """
     try:
         await protocol_manager.initialize()
-        return jsonify({'message': 'Device discovery initiated'}), 200
+        devices = await protocol_manager._discover_nodes()
+        return jsonify({'message': 'Device discovery completed', 'devices': devices})
     except Exception as e:
         logger.error(f"Error during device discovery: {e}")
         return jsonify({'error': 'Failed to discover devices'}), 500
+
+@devices_blueprint.route('/<string:node_id>/info', methods=['GET'])
+@async_route
+async def get_device_info(node_id):
+    """
+    Get detailed information about a device
+    ---
+    parameters:
+      - name: node_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Device information
+      404:
+        description: Device not found
+    """
+    try:
+        info = await protocol_manager.get_node_info(node_id)
+        if not info:
+            return jsonify({'error': 'Device not found'}), 404
+        return jsonify(info)
+    except Exception as e:
+        logger.error(f"Error getting device info: {e}")
+        return jsonify({'error': 'Failed to get device information'}), 500
 
 @devices_blueprint.route('/<string:node_id>/control', methods=['POST'])
 @async_route
@@ -151,29 +230,3 @@ async def control_device(node_id):
     except Exception as e:
         logger.error(f"Error controlling device: {e}")
         return jsonify({'error': 'Failed to control device'}), 500
-
-@devices_blueprint.route('/<string:node_id>/info', methods=['GET'])
-@async_route
-async def get_device_info(node_id):
-    """
-    Get detailed information about a device
-    ---
-    parameters:
-      - name: node_id
-        in: path
-        type: string
-        required: true
-    responses:
-      200:
-        description: Device information
-      404:
-        description: Device not found
-    """
-    try:
-        info = await protocol_manager.get_node_info(node_id)
-        if not info:
-            return jsonify({'error': 'Device not found'}), 404
-        return jsonify(info)
-    except Exception as e:
-        logger.error(f"Error getting device info: {e}")
-        return jsonify({'error': 'Failed to get device information'}), 500

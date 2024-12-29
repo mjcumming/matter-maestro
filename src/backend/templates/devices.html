@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Management - Matter Maestro</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active">Devices</li>
+            </ol>
+        </nav>
+
+        <div class="row mb-4">
+            <div class="col">
+                <h2>Matter Device Management</h2>
+                <p class="lead">Pair, commission, and manage your Matter devices</p>
+            </div>
+        </div>
+
+        <!-- Device Discovery Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Device Pairing</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="pairing-form">
+                            <div class="mb-3">
+                                <label for="setup-code" class="form-label">Setup Code</label>
+                                <input type="text" class="form-control" id="setup-code" 
+                                       placeholder="Enter device setup code" pattern="\d{8}">
+                                <div class="form-text">Enter the 8-digit setup code from your device</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="start-pairing">
+                                Start Pairing
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Network Discovery</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-success mb-3" id="discover-devices">
+                            Discover Devices
+                        </button>
+                        <div id="discovery-status" class="alert alert-info d-none">
+                            Searching for Matter devices...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device List Section -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Connected Devices</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Last Seen</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="device-list">
+                            <!-- Devices will be listed here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Configuration Modal -->
+    <div class="modal fade" id="deviceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Device Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="device-config-form">
+                        <div class="mb-3">
+                            <label for="device-name" class="form-label">Device Name</label>
+                            <input type="text" class="form-control" id="device-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="device-room" class="form-label">Room</label>
+                            <input type="text" class="form-control" id="device-room">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-device-config">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deviceList = document.getElementById('device-list');
+            const discoverBtn = document.getElementById('discover-devices');
+            const discoveryStatus = document.getElementById('discovery-status');
+            const pairingForm = document.getElementById('pairing-form');
+
+            // Handle device discovery
+            discoverBtn.addEventListener('click', async () => {
+                discoveryStatus.classList.remove('d-none');
+                discoverBtn.disabled = true;
+
+                try {
+                    const response = await fetch('/api/devices/discover', {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        discoveryStatus.classList.add('alert-success');
+                        discoveryStatus.textContent = 'Device discovery completed!';
+                        loadDevices();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    discoveryStatus.classList.add('alert-danger');
+                    discoveryStatus.textContent = `Discovery failed: ${error.message}`;
+                } finally {
+                    discoverBtn.disabled = false;
+                    setTimeout(() => {
+                        discoveryStatus.classList.add('d-none');
+                    }, 3000);
+                }
+            });
+
+            // Handle device pairing
+            pairingForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const setupCode = document.getElementById('setup-code').value;
+
+                try {
+                    const response = await fetch('/api/devices/pair', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ setup_code: setupCode })
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        // Show configuration modal for the new device
+                        const modal = new bootstrap.Modal(document.getElementById('deviceModal'));
+                        modal.show();
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    alert(`Pairing failed: ${error.message}`);
+                }
+            });
+
+            // Load and display devices
+            async function loadDevices() {
+                try {
+                    const response = await fetch('/api/devices');
+                    const devices = await response.json();
+                    
+                    deviceList.innerHTML = '';
+                    devices.forEach(device => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${device.name}</td>
+                            <td>${device.type}</td>
+                            <td>
+                                <span class="badge ${device.online ? 'bg-success' : 'bg-danger'}">
+                                    ${device.online ? 'Online' : 'Offline'}
+                                </span>
+                            </td>
+                            <td>${new Date(device.last_seen).toLocaleString()}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="configureDevice('${device.id}')">
+                                    Configure
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="removeDevice('${device.id}')">
+                                    Remove
+                                </button>
+                            </td>
+                        `;
+                        deviceList.appendChild(row);
+                    });
+                } catch (error) {
+                    console.error('Error loading devices:', error);
+                }
+            }
+
+            // Initial device load
+            loadDevices();
+
+            // Refresh device list periodically
+            setInterval(loadDevices, 30000);
+        });
+
+        // Global functions for device actions
+        window.configureDevice = function(deviceId) {
+            const modal = new bootstrap.Modal(document.getElementById('deviceModal'));
+            // Load device configuration
+            fetch(`/api/devices/${deviceId}/info`)
+                .then(response => response.json())
+                .then(device => {
+                    document.getElementById('device-name').value = device.name || '';
+                    document.getElementById('device-room').value = device.room || '';
+                    modal.show();
+                });
+        };
+
+        window.removeDevice = function(deviceId) {
+            if (confirm('Are you sure you want to remove this device?')) {
+                fetch(`/api/devices/${deviceId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Failed to remove device');
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>
