@@ -24,6 +24,27 @@ def get_circuits():
     responses:
       200:
         description: List of all virtual circuits
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              type:
+                type: string
+                enum: [switch, dimmer, color]
+              devices:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    device_id:
+                      type: integer
+                    role:
+                      type: string
     """
     circuits = circuits_table.all()
     return jsonify(circuits)
@@ -42,6 +63,9 @@ def create_circuit():
           properties:
             name:
               type: string
+            type:
+              type: string
+              enum: [switch, dimmer, color]
             devices:
               type: array
               items:
@@ -51,6 +75,7 @@ def create_circuit():
                     type: integer
                   role:
                     type: string
+                    enum: [primary, secondary]
     responses:
       201:
         description: Circuit created successfully
@@ -59,17 +84,46 @@ def create_circuit():
     """
     try:
         data = request.get_json()
-        if not all(k in data for k in ['name', 'devices']):
+        if not all(k in data for k in ['name', 'type', 'devices']):
             return jsonify({'error': 'Missing required fields'}), 400
 
-        # Register with virtual circuit manager
-        circuit_manager.register_circuit(data)
+        if data['type'] not in ['switch', 'dimmer', 'color']:
+            return jsonify({'error': 'Invalid circuit type'}), 400
 
-        circuit_id = circuits_table.insert(data)
-        return jsonify({'id': circuit_id, **data}), 201
+        # Register with virtual circuit manager
+        circuit_data = circuit_manager.register_circuit(data)
+
+        # Save to database
+        circuit_id = circuits_table.insert(circuit_data)
+        return jsonify({'id': circuit_id, **circuit_data}), 201
     except Exception as e:
         logger.error(f"Error creating virtual circuit: {e}")
-        return jsonify({'error': 'Failed to create virtual circuit'}), 500
+        return jsonify({'error': str(e)}), 500
+
+@virtual_circuits_blueprint.route('/<int:circuit_id>', methods=['GET'])
+def get_circuit(circuit_id):
+    """
+    Get a specific virtual circuit
+    ---
+    parameters:
+      - name: circuit_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Circuit details
+      404:
+        description: Circuit not found
+    """
+    try:
+        circuit = circuit_manager.get_circuit(circuit_id)
+        if not circuit:
+            return jsonify({'error': 'Circuit not found'}), 404
+        return jsonify(circuit)
+    except Exception as e:
+        logger.error(f"Error getting circuit: {e}")
+        return jsonify({'error': 'Circuit not found'}), 404
 
 @virtual_circuits_blueprint.route('/<int:circuit_id>', methods=['DELETE'])
 def delete_circuit(circuit_id):
@@ -88,11 +142,15 @@ def delete_circuit(circuit_id):
         description: Circuit not found
     """
     try:
+        circuit_manager.delete_circuit(circuit_id)
         circuits_table.remove(doc_ids=[circuit_id])
         return jsonify({'message': 'Circuit deleted successfully'})
+    except ValueError as e:
+        logger.error(f"Error deleting circuit: {e}")
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
         logger.error(f"Error deleting circuit: {e}")
-        return jsonify({'error': 'Circuit not found'}), 404
+        return jsonify({'error': 'Failed to delete circuit'}), 500
 
 @virtual_circuits_blueprint.route('/<int:circuit_id>/trigger', methods=['POST'])
 def trigger_circuit(circuit_id):
@@ -114,20 +172,44 @@ def trigger_circuit(circuit_id):
               type: integer
             state:
               type: object
+              properties:
+                on:
+                  type: boolean
+                brightness:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                hue:
+                  type: integer
+                  minimum: 0
+                  maximum: 360
+                saturation:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                value:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
     responses:
       200:
         description: Circuit triggered successfully
       404:
         description: Circuit not found
+      400:
+        description: Invalid state for circuit type
     """
     try:
         data = request.get_json()
-        circuit = circuits_table.get(doc_id=circuit_id)
+        circuit = circuit_manager.get_circuit(circuit_id)
         if not circuit:
             return jsonify({'error': 'Circuit not found'}), 404
 
         circuit_manager.trigger_circuit(circuit_id, data)
         return jsonify({'message': 'Circuit triggered successfully'})
+    except ValueError as e:
+        logger.error(f"Error triggering circuit: {e}")
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         logger.error(f"Error triggering circuit: {e}")
         return jsonify({'error': 'Failed to trigger circuit'}), 500
