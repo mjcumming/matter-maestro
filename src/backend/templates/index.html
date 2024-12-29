@@ -145,12 +145,14 @@
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary">Save Settings</button>
-                            <button type="button" id="trigger-backup" class="btn btn-success ms-2">
+                            <button type="button" id="trigger-backup" class="btn btn-success ms-2" disabled>
                                 Backup Now
                             </button>
                         </form>
                         <div class="mt-3">
                             <small class="text-muted">Last backup: <span id="last-backup">Never</span></small>
+                            <br>
+                            <small class="text-muted" id="backup-status">Configure a cloud service to enable backups</small>
                         </div>
                     </div>
                 </div>
@@ -210,6 +212,30 @@
                 window.location.href = `/api/devices/ui?view=${view}`;
             });
 
+            function updateBackupStatus(config) {
+                const backupBtn = document.getElementById('trigger-backup');
+                const statusText = document.getElementById('backup-status');
+
+                // Check if we have all required configurations
+                const hasService = config.service && config.service !== '';
+                const isAuthenticated = config.authenticated === true;
+                const isEnabled = config.backup_enabled === true;
+
+                if (!hasService) {
+                    statusText.textContent = 'Configure a cloud service to enable backups';
+                    backupBtn.disabled = true;
+                } else if (!isAuthenticated) {
+                    statusText.textContent = 'Authenticate with the cloud service to enable backups';
+                    backupBtn.disabled = true;
+                } else if (!isEnabled) {
+                    statusText.textContent = 'Enable automatic backup to use backup features';
+                    backupBtn.disabled = true;
+                } else {
+                    statusText.textContent = 'Backup system ready';
+                    backupBtn.disabled = false;
+                }
+            }
+
             // Load backup configuration
             fetch('/api/backup/config')
                 .then(response => response.json())
@@ -224,6 +250,8 @@
                         document.getElementById('last-backup').textContent = 
                             new Date(config.last_backup).toLocaleString();
                     }
+                    // Update backup button status based on configuration
+                    updateBackupStatus(config);
                 });
 
             // Cloud service selection
@@ -234,6 +262,10 @@
                 } else {
                     authSection.classList.add('d-none');
                 }
+                // Update backup status when service changes
+                fetch('/api/backup/config')
+                    .then(response => response.json())
+                    .then(config => updateBackupStatus(config));
             });
 
             // Auto backup toggle
@@ -265,6 +297,8 @@
                 .then(response => response.json())
                 .then(result => {
                     alert('Backup settings saved successfully');
+                    // Update backup status after saving config
+                    updateBackupStatus(result);
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -299,7 +333,26 @@
                 .finally(() => {
                     this.disabled = false;
                     this.textContent = 'Backup Now';
+                    // Refresh backup status after attempt
+                    fetch('/api/backup/config')
+                        .then(response => response.json())
+                        .then(config => updateBackupStatus(config));
                 });
+            });
+
+            // Service authentication handlers
+            document.getElementById('authenticate-service').addEventListener('click', function() {
+                const service = document.getElementById('cloud-service').value;
+                if (!service) {
+                    alert('Please select a cloud service first');
+                    return;
+                }
+
+                if (service === 'google_drive') {
+                    authenticateGoogleDrive();
+                } else if (service === 'onedrive') {
+                    authenticateOneDrive();
+                }
             });
         });
 
