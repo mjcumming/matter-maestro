@@ -5,7 +5,7 @@ version = "0.1.0"
 description = "A local-first Matter fabric controller"
 requires-python = ">=3.11"
 authors = [
-    {name = "Matter Maestro Team", email = "team@mattermaestro.dev"}
+    {name = "Michael Cumming", email = "mike@4831.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
