@@ -24,8 +24,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/matter-maestro"
-Repository = "https://github.com/yourusername/matter-maestro.git"
+Homepage = "https://github.com/MikeCz01/matter-maestro"
+Repository = "https://github.com/MikeCz01/matter-maestro.git"
 
 [build-system]
 requires = ["setuptools>=61.0"]
