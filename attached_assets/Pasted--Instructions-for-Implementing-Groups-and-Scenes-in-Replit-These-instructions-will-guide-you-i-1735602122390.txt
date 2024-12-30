@@ -1,0 +1,113 @@
+### Instructions for Implementing Groups and Scenes in Replit
+
+These instructions will guide you in building a Matter Maestro controller using Replit that supports group and scene management with a user-friendly UI and a new virtual device for scene control.
+
+---
+
+### **Core Concepts**
+1. **Groups:**
+   - Groups in Matter are collections of devices tied to a multicast IP address.
+   - Devices in a group can be controlled together (e.g., turn on/off or adjust brightness for a group of lights).
+   - The UI should allow users to create, edit, and delete groups, and share the **Group ID** and **multicast address** with other controllers.
+
+2. **Scenes:**
+   - Scenes represent specific states for devices (e.g., a "Dinner Mode" scene sets specific lights to a warm dim setting).
+   - Scenes are stored and managed on the controller.
+   - To make scenes interoperable across controllers, expose a **virtual Matter device** (e.g., a switch) that activates the scene. Other controllers can pair with this device to trigger the scene.
+
+---
+
+### **Implementation Steps**
+
+#### **1. Build a UI for Groups**
+- **Features:**
+  - Menu system to create, edit, and delete groups.
+  - Each group should display:
+    - Group ID
+    - Multicast address
+    - Devices in the group
+  - Include an option to share group details (e.g., JSON format for other controllers).
+
+- **Actions:**
+  1. Design a form to create a new group:
+     - Input: Group ID, device IDs.
+  2. Display existing groups in a table.
+  3. Add buttons for editing and deleting groups.
+  4. Provide a "Share" button to copy group details (Group ID and multicast address) for use in other Matter controllers.
+
+#### **2. Build a UI for Scenes**
+- **Features:**
+  - Menu system to create, edit, and delete scenes.
+  - Each scene should display:
+    - Scene ID
+    - Associated devices and their states.
+  - Expose scenes as virtual devices, with each scene represented as a switch.
+
+- **Actions:**
+  1. Design a form to create a new scene:
+     - Input: Scene ID, devices, and their desired states.
+  2. Display existing scenes in a table.
+  3. Add buttons for editing and deleting scenes.
+  4. Generate a virtual Matter device (e.g., switch) for each scene and list the pairing details in the UI (e.g., QR code or pairing code).
+
+#### **3. Expose Groups for Sharing**
+- **Objective:**
+  - Share multicast IP and group ID information with other Matter fabric controllers.
+- **Actions:**
+  1. Add a "Share Group" option in the group management menu.
+  2. Display the multicast IP and Group ID in a sharable format.
+  3. Optionally provide a downloadable JSON or text file with group details.
+
+#### **4. Expose Scenes as Virtual Devices**
+- **Objective:**
+  - Enable other controllers to activate scenes by pairing with a virtual Matter device.
+- **Actions:**
+  1. For each scene, create a virtual Matter device (e.g., a switch).
+  2. Allow pairing of the virtual device with other Matter fabric controllers.
+     - Generate a QR code or pairing code for the virtual device.
+  3. Map the "On" state of the switch to activating the scene and the "Off" state to deactivating it (optional).
+
+#### **5. Enable Dynamic Updates**
+- Use **web sockets** or a similar mechanism to ensure the UI dynamically updates as groups and scenes are created, edited, or deleted.
+
+---
+
+### **Technical Details to Communicate with Replit**
+1. **Menu and UI Implementation:**
+   - Use a web framework (e.g., Flask or FastAPI) for backend handling.
+   - Use a frontend library (e.g., React or plain HTML/JavaScript) to build the UI.
+
+2. **Group Management:**
+   - Store group details (Group ID, multicast IP, device IDs) in a database or JSON file.
+   - On group creation, update the Matter server to configure devices for multicast.
+
+3. **Scene Management:**
+   - Store scene details (Scene ID, device states) in a database or JSON file.
+   - Expose each scene as a virtual Matter device using the Matter server APIs.
+
+4. **Sharing Details:**
+   - Provide downloadable links or display sharable information in the UI for groups and scenes.
+   - For scenes, display pairing details (e.g., QR code) for the virtual devices.
+
+---
+
+### **Expected User Workflow**
+1. **Groups:**
+   - Create groups by selecting devices and assigning a Group ID.
+   - Edit or delete groups as needed.
+   - Share multicast information with other controllers for integration.
+
+2. **Scenes:**
+   - Create scenes by configuring device states and assigning a Scene ID.
+   - Edit or delete scenes as needed.
+   - Pair other controllers with the scene’s virtual device to enable remote activation.
+
+3. **Controller Collaboration:**
+   - Use shared multicast details for groups and pairable virtual devices for scenes to collaborate with other controllers on the same fabric.
+
+---
+
+### **Future Enhancements**
+- Add scene scheduling to activate scenes at specific times.
+- Enable group and scene backup/restore functionality for easier migration between controllers.
+- Add device discovery to simplify group and scene configuration.
