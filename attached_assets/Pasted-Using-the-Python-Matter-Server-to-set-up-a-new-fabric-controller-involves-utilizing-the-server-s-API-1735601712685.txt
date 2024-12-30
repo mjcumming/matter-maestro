@@ -1,0 +1,118 @@
+Using the Python Matter Server to set up a new fabric controller involves utilizing the server's APIs to initialize the fabric and configure the controller's settings. Below are the general steps you can follow, assuming you're working with the Python Matter SDK or a similar package that provides Matter server functionality:
+
+---
+
+### **Steps to Set Up a New Fabric Controller**
+
+#### **1. Install the Required Package**
+Ensure you have the necessary Python package installed. If you’re using the [connectedhomeip](https://github.com/project-chip/connectedhomeip) repository, install it as follows:
+
+```bash
+pip install matter-server
+```
+
+---
+
+#### **2. Import Required Modules**
+In your Python script, import the necessary modules:
+
+```python
+from matter_server import MatterServer
+from matter_server.models import Fabric
+```
+
+---
+
+#### **3. Initialize the Matter Server**
+Create an instance of the Matter server. This is your fabric controller.
+
+```python
+# Initialize the Matter server
+server = MatterServer()
+```
+
+---
+
+#### **4. Set Up a New Fabric**
+To create a new fabric, you typically need to:
+- Define a unique Fabric ID.
+- Generate or load operational credentials for the fabric controller.
+
+Here’s an example:
+
+```python
+# Create a new fabric
+fabric = Fabric(fabric_id=1234)  # Replace with a unique Fabric ID
+server.add_fabric(fabric)
+```
+
+---
+
+#### **5. Generate Operational Credentials**
+The fabric controller requires operational certificates (OpCerts) to securely interact with devices. These can be generated or loaded from a file.
+
+```python
+# Generate or load operational credentials
+fabric.generate_operational_credentials()
+```
+
+---
+
+#### **6. Commission Devices**
+Once the fabric is set up, you can start adding devices to the fabric by commissioning them:
+
+```python
+# Commission a device (example using a Matter code)
+device = server.commission_device(
+    setup_code="12345678",  # Replace with the Matter setup code for the device
+    fabric_id=fabric.fabric_id
+)
+```
+
+---
+
+#### **7. Save Fabric Configuration**
+Save the fabric configuration to persist it across restarts:
+
+```python
+# Save the fabric configuration
+server.save_configuration("fabric_config.json")
+```
+
+---
+
+#### **8. Start the Matter Server**
+Finally, start the Matter server to enable device communication:
+
+```python
+# Start the server
+server.start()
+
+# Wait for events or interact with devices
+server.run_forever()
+```
+
+---
+
+### **Key Notes**
+1. **Fabric ID**:
+   - Ensure the Fabric ID is unique across your environment to avoid conflicts.
+
+2. **Operational Credentials**:
+   - These are critical for secure communication. Use trusted methods to generate and store these credentials.
+
+3. **Commissioning Devices**:
+   - Devices must support the Matter protocol and be in pairing mode.
+
+4. **Configuration Persistence**:
+   - Save configurations regularly to ensure settings persist across reboots.
+
+5. **Event Handling**:
+   - Use event listeners to handle device interactions dynamically.
+
+---
+
+### **Example Repository**
+If you're using a specific Python Matter Server implementation, it’s worth checking the official documentation or GitHub repository for further details and examples.
+
+Would you like assistance with a specific step, such as commissioning devices or generating credentials?
