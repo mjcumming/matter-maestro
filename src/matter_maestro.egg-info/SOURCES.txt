@@ -17,6 +17,8 @@ src/backend/groups/__init__.py
 src/backend/groups/routes.py
 src/backend/matter/__init__.py
 src/backend/matter/protocol_manager.py
+src/backend/network/__init__.py
+src/backend/network/routes.py
 src/backend/scenes/__init__.py
 src/backend/scenes/routes.py
 src/backend/scenes/scene_manager.py

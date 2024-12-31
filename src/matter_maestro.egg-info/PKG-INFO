@@ -19,6 +19,7 @@ Requires-Dist: python-matter-server>=7.0.0
 Requires-Dist: tinydb>=4.8.2
 Requires-Dist: flask-wtf>=1.2.2
 Requires-Dist: oauthlib>=3.2.2
+Requires-Dist: netifaces>=0.11.0
 
 git clone https://github.com/yourusername/matter-maestro.git
 cd matter-maestro
