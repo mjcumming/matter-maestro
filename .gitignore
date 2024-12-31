@@ -1,0 +1,16 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Distributions
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Environments
+venv/
+.env
+
+# Additional directory
+attached_assets/
