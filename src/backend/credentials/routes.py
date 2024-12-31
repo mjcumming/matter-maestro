@@ -49,7 +49,6 @@ def initialize_credentials():
     """
     try:
         logger.info("Initializing new fabric credentials")
-        # Remove async/await since we're using synchronous operations
         result = credential_manager.initialize_new_credentials()
         if result:
             logger.info("Successfully initialized new credentials")
@@ -58,6 +57,29 @@ def initialize_credentials():
         return jsonify({'error': 'Failed to initialize credentials'}), 500
     except Exception as e:
         logger.error(f"Error initializing credentials: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@credentials_blueprint.route('/delete', methods=['POST'])
+def delete_credentials():
+    """
+    Delete current Matter fabric credentials
+    ---
+    responses:
+      200:
+        description: Credentials deleted successfully
+      500:
+        description: Error deleting credentials
+    """
+    try:
+        logger.info("Deleting fabric credentials")
+        result = credential_manager.delete_credentials()
+        if result:
+            logger.info("Successfully deleted credentials")
+            return jsonify({'message': 'Credentials deleted successfully'})
+        logger.error("Failed to delete credentials")
+        return jsonify({'error': 'Failed to delete credentials'}), 500
+    except Exception as e:
+        logger.error(f"Error deleting credentials: {e}")
         return jsonify({'error': str(e)}), 500
 
 @credentials_blueprint.route('/fabric', methods=['PUT'])

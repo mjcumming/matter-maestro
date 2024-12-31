@@ -40,7 +40,6 @@ class CredentialManager:
             logger.info("Initializing new Matter fabric credentials")
 
             # For now, we'll create a basic credential structure
-            # We'll integrate with python-matter-server in the next iteration
             new_fabric_id = str(uuid.uuid4())
             credentials = {
                 'fabric_id': new_fabric_id,
@@ -58,6 +57,22 @@ class CredentialManager:
             return True
         except Exception as e:
             logger.error(f"Failed to initialize new credentials: {e}")
+            return False
+
+    def delete_credentials(self):
+        """Delete current Matter fabric credentials."""
+        try:
+            logger.info("Deleting Matter fabric credentials")
+            if self.cred_file.exists():
+                self.cred_file.unlink()  # Delete the file
+                # Reinitialize with empty credentials
+                self._initialize_credentials()
+                logger.info("Successfully deleted credentials and reinitialized empty state")
+                return True
+            logger.info("No credentials file found to delete")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete credentials: {e}")
             return False
 
     def save_credentials(self, credentials):
