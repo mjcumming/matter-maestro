@@ -1,0 +1,53 @@
+
+Instructions for Group Management in Replit
+These instructions outline how to implement the creation, editing, deleting, and naming of groups for a Matter-enabled controller in Replit. This functionality will be part of the Matter Maestro project, which allows users to manage groups of devices through a user-friendly UI.
+
+Step-by-Step Guide
+1. Group Creation
+Objective: Allow users to create a new group by assigning a unique Group ID, providing a name, and selecting devices.
+UI Components:
+Form Elements:
+Input field for Group Name.
+Input field for Group ID (auto-generated or manually entered).
+Multi-select dropdown for choosing devices (list of available devices from the Matter fabric).
+Button to Submit the group details.
+Backend Logic:
+Validate the Group ID for uniqueness within the fabric.
+Assign a multicast IP address to the group.
+Add the group to the Matter server and persist its details (e.g., in a JSON file or database).
+2. Group Editing
+Objective: Allow users to edit group details, including renaming the group, modifying the Group ID, or changing the devices in the group.
+UI Components:
+List of Existing Groups:
+Display each group’s Group Name, Group ID, and list of devices.
+Include an Edit Button for each group.
+Edit Form:
+Prefill the group’s current details in editable fields.
+Allow changes to:
+Group Name.
+Group ID (ensure it remains unique).
+Devices (add or remove devices).
+Button to Save Changes.
+Backend Logic:
+On save, validate the new details (e.g., unique Group ID).
+Update the group configuration on the Matter server.
+Persist the updated group details.
+3. Group Deletion
+Objective: Allow users to delete a group, removing it from the Matter server and any associated devices.
+UI Components:
+List of Existing Groups:
+Include a Delete Button for each group.
+Prompt for confirmation before deletion (e.g., "Are you sure you want to delete this group?").
+Backend Logic:
+On confirmation, remove the group from the Matter server.
+Clear the multicast IP address and group membership for devices in the group.
+Delete the group details from persistent storage.
+4. Naming Groups
+Objective: Allow users to assign meaningful names to groups for easy identification and management.
+UI Components:
+Input field for Group Name during group creation or editing.
+Display Group Name prominently in the group list.
+Backend Logic:
+Store the Group Name along with the Group ID and other details.
+Ensure the Group Name can be updated during editing.
+Use the Group Name in the UI to enhance readability (e.g., "Living Room Lights" instead of "Group 101").
