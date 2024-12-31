@@ -37,7 +37,7 @@ def get_credentials():
         return jsonify({'error': 'Failed to retrieve credentials'}), 500
 
 @credentials_blueprint.route('/initialize', methods=['POST'])
-async def initialize_credentials():
+def initialize_credentials():
     """
     Initialize new Matter fabric credentials
     ---
@@ -49,9 +49,12 @@ async def initialize_credentials():
     """
     try:
         logger.info("Initializing new fabric credentials")
-        result = await credential_manager.initialize_new_credentials()
+        # Remove async/await since we're using synchronous operations
+        result = credential_manager.initialize_new_credentials()
         if result:
+            logger.info("Successfully initialized new credentials")
             return jsonify({'message': 'Credentials initialized successfully'})
+        logger.error("Failed to initialize credentials")
         return jsonify({'error': 'Failed to initialize credentials'}), 500
     except Exception as e:
         logger.error(f"Error initializing credentials: {e}")
