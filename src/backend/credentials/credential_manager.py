@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 import json
-from ..logger import get_logger
 import uuid
+from ..logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -19,12 +19,12 @@ class CredentialManager:
         else:
             logger.info("Found existing credentials file")
 
-    def _initialize_credentials(self):
+    def _initialize_credentials(self, fabric_id=None, vendor_id=None):
         """Initialize empty credentials file with a new fabric ID."""
         try:
             default_creds = {
-                'fabric_id': str(uuid.uuid4()),  # Generate a unique fabric ID
-                'vendor_id': '0xFFF1',  # Default vendor ID for development
+                'fabric_id': fabric_id or str(uuid.uuid4()),  # Use provided ID or generate new
+                'vendor_id': vendor_id or '0xFFF1',  # Use provided ID or use default
                 'operational_credentials': None,
                 'devices': {}
             }
@@ -34,18 +34,17 @@ class CredentialManager:
             logger.error(f"Failed to initialize credentials: {e}")
             raise
 
-    def initialize_new_credentials(self):
+    def initialize_new_credentials(self, fabric_id=None, vendor_id=None):
         """Initialize new Matter fabric credentials."""
         try:
             logger.info("Initializing new Matter fabric credentials")
 
-            # For now, we'll create a basic credential structure
-            new_fabric_id = str(uuid.uuid4())
+            # Create credentials structure with provided or default values
             credentials = {
-                'fabric_id': new_fabric_id,
-                'vendor_id': '0xFFF1',
+                'fabric_id': fabric_id or str(uuid.uuid4()),
+                'vendor_id': vendor_id or '0xFFF1',
                 'operational_credentials': {
-                    'fabric_id': new_fabric_id,
+                    'fabric_id': fabric_id or str(uuid.uuid4()),
                     'root_cert': 'development_certificate',  # Placeholder
                     'operational_cert': 'development_certificate'  # Placeholder
                 },
@@ -53,7 +52,7 @@ class CredentialManager:
             }
 
             self.save_credentials(credentials)
-            logger.info("Successfully initialized new Matter fabric credentials")
+            logger.info("Successfully initialized new credentials")
             return True
         except Exception as e:
             logger.error(f"Failed to initialize new credentials: {e}")
@@ -112,6 +111,8 @@ class CredentialManager:
             creds = self.load_credentials()
             old_id = creds.get('fabric_id')
             creds['fabric_id'] = new_fabric_id
+            if creds.get('operational_credentials'):
+                creds['operational_credentials']['fabric_id'] = new_fabric_id
             self.save_credentials(creds)
             logger.info(f"Successfully updated fabric ID from {old_id} to {new_fabric_id}")
             return True
