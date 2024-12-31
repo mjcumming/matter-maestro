@@ -36,6 +36,27 @@ def get_credentials():
         logger.error(f"Error retrieving credentials: {e}")
         return jsonify({'error': 'Failed to retrieve credentials'}), 500
 
+@credentials_blueprint.route('/initialize', methods=['POST'])
+async def initialize_credentials():
+    """
+    Initialize new Matter fabric credentials
+    ---
+    responses:
+      200:
+        description: Credentials initialized successfully
+      500:
+        description: Error initializing credentials
+    """
+    try:
+        logger.info("Initializing new fabric credentials")
+        result = await credential_manager.initialize_new_credentials()
+        if result:
+            return jsonify({'message': 'Credentials initialized successfully'})
+        return jsonify({'error': 'Failed to initialize credentials'}), 500
+    except Exception as e:
+        logger.error(f"Error initializing credentials: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @credentials_blueprint.route('/fabric', methods=['PUT'])
 def update_fabric_id():
     """
