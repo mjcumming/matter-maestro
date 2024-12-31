@@ -34,6 +34,32 @@ class CredentialManager:
             logger.error(f"Failed to initialize credentials: {e}")
             raise
 
+    def initialize_new_credentials(self):
+        """Initialize new Matter fabric credentials."""
+        try:
+            logger.info("Initializing new Matter fabric credentials")
+
+            # For now, we'll create a basic credential structure
+            # We'll integrate with python-matter-server in the next iteration
+            new_fabric_id = str(uuid.uuid4())
+            credentials = {
+                'fabric_id': new_fabric_id,
+                'vendor_id': '0xFFF1',
+                'operational_credentials': {
+                    'fabric_id': new_fabric_id,
+                    'root_cert': 'development_certificate',  # Placeholder
+                    'operational_cert': 'development_certificate'  # Placeholder
+                },
+                'devices': {}
+            }
+
+            self.save_credentials(credentials)
+            logger.info("Successfully initialized new Matter fabric credentials")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to initialize new credentials: {e}")
+            return False
+
     def save_credentials(self, credentials):
         """Save credentials to file."""
         try:
@@ -78,19 +104,6 @@ class CredentialManager:
             logger.error(f"Failed to update fabric ID: {e}")
             return False
 
-    def store_operational_credentials(self, credentials):
-        """Store operational credentials for the fabric."""
-        try:
-            logger.info("Storing new operational credentials")
-            creds = self.load_credentials()
-            creds['operational_credentials'] = credentials
-            self.save_credentials(creds)
-            logger.info("Successfully stored new operational credentials")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to store operational credentials: {e}")
-            return False
-
     def get_fabric_info(self):
         """Get current fabric information including operational status."""
         try:
@@ -98,7 +111,7 @@ class CredentialManager:
             fabric_info = {
                 'fabric_id': creds.get('fabric_id'),
                 'vendor_id': creds.get('vendor_id'),
-                'has_operational_credentials': bool(creds.get('operational_credentials')),
+                'operational_credentials': bool(creds.get('operational_credentials')),
                 'device_count': len(creds.get('devices', {}))
             }
             logger.debug(f"Retrieved fabric info: {fabric_info}")
