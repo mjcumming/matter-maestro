@@ -5,10 +5,13 @@ from .scenes.routes import scenes_blueprint
 from .groups.routes import groups_blueprint
 from .virtual_circuits.routes import virtual_circuits_blueprint
 from .credentials.routes import credentials_blueprint
-from .backup.routes import backup_blueprint  # Add backup blueprint import
+from .backup.routes import backup_blueprint
 from .logger import get_logger
 from .database.database import initialize_db
+import logging
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 logger = get_logger(__name__)
 
 app = Flask(__name__)
@@ -28,7 +31,7 @@ app.register_blueprint(scenes_blueprint, url_prefix="/api/scenes")
 app.register_blueprint(groups_blueprint, url_prefix="/api/groups")
 app.register_blueprint(virtual_circuits_blueprint, url_prefix="/api/virtual-circuits")
 app.register_blueprint(credentials_blueprint, url_prefix="/api/credentials")
-app.register_blueprint(backup_blueprint, url_prefix="/api/backup")  # Register backup blueprint
+app.register_blueprint(backup_blueprint, url_prefix="/api/backup")
 
 @app.route('/')
 def index():
@@ -45,4 +48,5 @@ def server_error(error):
     return {'error': 'Internal server error'}, 500
 
 if __name__ == "__main__":
+    logger.info("Starting Matter Maestro application")
     app.run(host='0.0.0.0', port=5000, debug=True)
