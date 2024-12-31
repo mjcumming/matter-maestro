@@ -18,9 +18,14 @@
                     <span id="fabric-status-message">Checking fabric credentials...</span>
                 </div>
             </div>
-            <a href="/api/credentials/ui" class="btn btn-outline-primary btn-sm">
-                <i data-feather="settings"></i> Configure Network
-            </a>
+            <div class="d-flex gap-2">
+                <a href="/api/credentials/ui" class="btn btn-outline-primary btn-sm">
+                    <i data-feather="settings"></i> Configure Network
+                </a>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="delete-controller" style="display: none;">
+                    <i data-feather="trash-2"></i> Delete Controller
+                </button>
+            </div>
         </div>
 
         <!-- Header with Status -->
@@ -206,6 +211,36 @@
         </div>
     </div>
 
+    <!-- Add Delete Controller Modal -->
+    <div class="modal fade" id="deleteControllerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i data-feather="alert-triangle"></i> Delete Matter Controller
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <h6>Warning!</h6>
+                        <p class="mb-0">This action will:</p>
+                        <ul class="mb-0">
+                            <li>Delete all controller settings</li>
+                            <li>Remove all device associations</li>
+                            <li>Require re-initialization of the controller</li>
+                        </ul>
+                    </div>
+                    <p>Are you sure you want to delete the controller configuration?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script>
@@ -219,6 +254,7 @@
                     .then(data => {
                         const banner = document.getElementById('fabric-status-banner');
                         const message = document.getElementById('fabric-status-message');
+                        const deleteBtn = document.getElementById('delete-controller');
 
                         if (data.operational_credentials) {
                             banner.className = 'alert alert-success mb-4 d-flex justify-content-between align-items-center';
@@ -227,6 +263,7 @@
                                 <br>
                                 <small>Fabric ID: ${data.fabric_id}</small>
                             `;
+                            deleteBtn.style.display = 'inline-block';
                         } else {
                             banner.className = 'alert alert-warning mb-4 d-flex justify-content-between align-items-center';
                             message.innerHTML = `
@@ -234,6 +271,7 @@
                                 <br>
                                 <small>Click 'Configure Network' to set up your Matter network</small>
                             `;
+                            deleteBtn.style.display = 'none';
                         }
                     })
                     .catch(error => {
@@ -423,6 +461,48 @@
                     authenticateOneDrive();
                 }
             });
+
+            // Add delete controller functionality
+            const deleteBtn = document.getElementById('delete-controller');
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteControllerModal'));
+
+            // Delete controller button click handler
+            deleteBtn.addEventListener('click', () => {
+                deleteModal.show();
+            });
+
+            // Confirm deletion
+            document.getElementById('confirm-delete').addEventListener('click', function() {
+                deleteModal.hide();
+                this.disabled = true;
+
+                fetch('/api/credentials/delete', {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.error) throw new Error(result.error);
+                        showAlert('success', 'Controller configuration deleted successfully');
+                        setTimeout(() => {
+                            window.location.href = '/api/credentials/ui';
+                        }, 1500);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showAlert('danger', 'Failed to delete controller configuration: ' + error.message);
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                    });
+            });
+
+
+            //Helper function for alert messages (not in original)
+            function showAlert(type, message){
+                //Simple alert for demonstration - replace with more robust notification system as needed.
+                alert(message);
+            }
+
         });
 
         // Authentication handlers
